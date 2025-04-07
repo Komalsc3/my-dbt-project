@@ -10,7 +10,7 @@ jobs:
     env:
       DBT_CLOUD_API_KEY: dbtc_KcG9T1MgvGk7gWUZlgoh8Qxn5dPARyWyjuMebbVUsF93TtH1LQ
       ACCOUNT_ID: "70471823452202"
-      JOB_ID: "70471832292458"
+      JOB_ID: "70471823451355"
 
     steps:
     - name: Checkout repo
