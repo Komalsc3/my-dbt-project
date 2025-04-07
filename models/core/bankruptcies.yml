@@ -1,0 +1,11 @@
+version: 2
+
+models:
+  - name: bankruptcies
+    description: "chekcing unique and not null record for bankruptcies"
+    columns:
+      - name: loanid
+        description: "Primary key for this table"
+        tests:
+          - unique
+          - not_null
