@@ -30,7 +30,7 @@ with
         inner join
             {{ source("raw_reverse_svcr_celink", "vw_celink_loandata") }} ld
             on ld.loannumber = li.loannumber
-        where upper(ld.masterservicer) = '{{var(' masterservicer ')}}'
+        where upper(ld.masterservicer) = '{{var('masterservicer')}}'
         group by ld.loanid, bankruptcycasenumber, bankruptcyfilingstate
     ),
     celink_cbk_cte as (
@@ -74,13 +74,13 @@ with
                 where row_num = 1
             ) bk
             on bk.loannumber = ld.loannumber
-        where upper(ld.masterservicer) = '{{var(' masterservicer ')}}'
+        where upper(ld.masterservicer) = '{{var('masterservicer')}}'
     ),
     celink_bankruptcy_cte as (
         select
             rd.loanid as loanid,
             'CELINK' as servicer,  -- dbo.ContactPull(rd.ServicerId) as Servicer
-            '{{var(' masterservicer ')}}',
+            '{{var('masterservicer')}}',
             rd.loannumber as servicerloannumber,
             replace(
                 concat(
@@ -150,7 +150,7 @@ with
                 coalesce(cbk.chapter13dateofreferral, '1990-01-01')
             )
             > bk.bankruptcyfilingdate
-        where upper(rd.masterservicer) = '{{var(' masterservicer ')}}'
+        where upper(rd.masterservicer) = '{{var('masterservicer')}}'
     ),
     celink_cbpop_cte as (
         select
@@ -172,14 +172,14 @@ with
             )
         where
             b.loanid is null
-            and upper(rd.masterservicer) = '{{var(' masterservicer ')}}'
+            and upper(rd.masterservicer) = '{{var('masterservicer')}}'
         group by 1, 2
     ),
     celink_bankruptcy_stage_cte as (
         select
             rd.id as loanid,
             'CELINK' as servicer,  -- dbo.ContactPull(rd.ServicerId) AS 
-            '{{var(' masterservicer ')}}' as masterservicer,
+            '{{var('masterservicer')}}' as masterservicer,
             rd.loannumber as servicerloannumber,
             bp.servicerworkflowid,
             null as bkfilingstate,
@@ -285,13 +285,13 @@ with
             {{ source("raw_application", "parties") }} b on b.id = rd.borrower1id
         left outer join
             {{ source("raw_application", "parties") }} c on c.id = rd.borrower2id
-        where upper(rd.masterservicer) = '{{var(' masterservicer ')}}'
+        where upper(rd.masterservicer) = '{{var('masterservicer')}}'
     ),
     union_of_cte as (
         select
             loanid,
             servicer,
-            '{{var(' masterservicer ')}}' masterservicer,
+            '{{var('masterservicer')}}' masterservicer,
             servicerloannumber,
             servicerworkflowid,
             bkcounsel,
@@ -315,7 +315,7 @@ with
         select
             loanid,
             servicer,
-            '{{var(' masterservicer ')}}' masterservicer,
+            '{{var('masterservicer')}}' masterservicer,
             servicerloannumber,
             servicerworkflowid,
             bkcounsel,
