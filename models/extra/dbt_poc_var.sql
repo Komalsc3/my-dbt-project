@@ -8,8 +8,8 @@
 */
 
 {{ config(materialized='table',
-         database=var('dbname'),
-        schema=var('schema_name'),
+         database="stage",
+        schema="core",
         post_hook="UPDATE RAW.APPLICATION.TEST_TABLE SET COLUMN1='ABC'"		
     )
 }}
