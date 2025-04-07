@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DBT_CLOUD_API_KEY: dbtc_KcG9T1MgvGk7gWUZlgoh8Qxn5dPARyWyjuMebbVUsF93TtH1LQ
+      DBT_CLOUD_API_KEY: ${{ secrets.DBT_CLOUD_API_KEY }}
       ACCOUNT_ID: "70471823452202"
       JOB_ID: "70471832292458"
 
@@ -16,11 +16,8 @@ jobs:
     - name: Checkout repo
       uses: actions/checkout@v3
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y jq python3 python3-pip
-        pip install dbt-core pyyaml
+    - name: Install jq
+      run: sudo apt-get install -y jq
 
     - name: Get latest run ID
       id: get-run
@@ -29,63 +26,32 @@ jobs:
         RUN_ID=$(curl -s -H "Authorization: Token $DBT_CLOUD_API_KEY" \
           "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/?job_definition_id=$JOB_ID&order_by=-id&limit=1" \
           | jq -r '.data[0].id')
-
-        if [ "$RUN_ID" == "null" ] || [ -z "$RUN_ID" ]; then
-          echo "❌ Could not fetch a valid RUN_ID"
-          exit 1
-        fi
-
+        echo "Latest RUN_ID is: $RUN_ID"
         echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
-        echo "✅ Got RUN_ID: $RUN_ID"
 
-    - name: Set folder name using JOB_ID, date, and sequence
-      run: |
-        DATE=$(date +'%Y-%m-%d')
-        JOB_FOLDER="job_${JOB_ID}_${DATE}"
-        mkdir -p dbt_docs_generate
-        SEQ=$(ls dbt_docs_generate 2>/dev/null | grep "^$JOB_FOLDER" | wc -l)
-        SEQ_PADDED=$(printf "%02d" $((SEQ + 1)))
-        FOLDER_NAME="${JOB_FOLDER}_$SEQ_PADDED"
-        echo "FOLDER_NAME=$FOLDER_NAME" >> $GITHUB_ENV
-
-    - name: Pull latest changes
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git pull origin main --rebase
+    - name: Create docs folder
+      run: mkdir -p dbt_docs
 
     - name: Download DBT artifacts
       run: |
-        mkdir -p dbt_docs_generate/${{ env.FOLDER_NAME }}
-        for artifact in manifest.json catalog.json; do
+        for artifact in manifest.json catalog.json index.html; do
           echo "Downloading $artifact..."
           curl -s -H "Authorization: Token $DBT_CLOUD_API_KEY" \
-            -o "dbt_docs_generate/${{ env.FOLDER_NAME }}/$artifact" \
-            "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/${{ env.RUN_ID }}/artifacts/$artifact"
+            -o "dbt_docs/$artifact" \
+            "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/$RUN_ID/artifacts/$artifact"
         done
 
-    - name: Generate index.html using dbt
+    - name: Commit and push to repo
       run: |
-        mkdir -p target/
-        cp dbt_docs_generate/${{ env.FOLDER_NAME }}/manifest.json target/
-        cp dbt_docs_generate/${{ env.FOLDER_NAME }}/catalog.json target/
-        dbt docs generate
-        cp target/index.html dbt_docs_generate/${{ env.FOLDER_NAME }}/index.html
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
 
-    - name: Generate index.yml
-      run: |
-        echo "folders:" > dbt_docs_generate/index.yml
-        for dir in $(ls dbt_docs_generate | grep -E "^job_"); do
-          echo "  - name: $dir" >> dbt_docs_generate/index.yml
-        done
+        git pull --rebase origin main
+        git add dbt_docs/
 
-    - name: Commit and push artifacts
-      run: |
-        git add dbt_docs_generate/
         if git diff --cached --quiet; then
-          echo "✅ No changes to commit"
+          echo "No changes to commit"
         else
-          git commit -m "Add DBT artifacts for job $JOB_ID and run ID $RUN_ID [skip ci]"
-          git pull origin main --rebase
-          git push origin main
+          git commit -m "Update DBT Cloud artifacts including index.html [skip ci]"
+          git push
         fi
