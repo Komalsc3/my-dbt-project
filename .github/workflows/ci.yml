@@ -1,20 +1,23 @@
 name: Fetch DBT Cloud Artifacts (Hardcoded)
 
 on:
-  workflow_dispatch:  # Manually triggered from GitHub UI
+  workflow_dispatch:  # Allows manual trigger in GitHub UI
 
 jobs:
   fetch-artifacts:
     runs-on: ubuntu-latest
 
     env:
-      DBT_CLOUD_API_KEY: your-dbt-cloud-api-token     # <-- replace this
-      ACCOUNT_ID: "12345"                              # <-- replace this
-      JOB_ID: "67890"                                  # <-- replace this
+      DBT_CLOUD_API_KEY: dbtc_KcG9T1MgvGk7gWUZlgoh8Qxn5dPARyWyjuMebbVUsF93TtH1LQ
+      ACCOUNT_ID: "70471823452202"
+      JOB_ID: "70471823451355"
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
+
+    - name: Install jq (for JSON parsing)
+      run: sudo apt-get install jq
 
     - name: Get latest job run ID
       id: get-run
