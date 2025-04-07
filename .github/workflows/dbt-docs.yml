@@ -39,12 +39,16 @@ jobs:
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
+        git stash --include-untracked
         git pull --rebase origin main
+        git stash pop || true  # continue even if stash pop has conflicts or nothing to apply
+
         git add docs/
 
         if git diff --cached --quiet; then
-         echo "No changes to commit"
+          echo "No changes to commit"
         else
-         git commit -m "Update DBT Cloud artifacts [skip ci]"
-         git push
+          git commit -m "Update DBT Cloud artifacts [skip ci]"
+          git push
         fi
+
