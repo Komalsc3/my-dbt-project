@@ -16,13 +16,6 @@ jobs:
     - name: Checkout repo
       uses: actions/checkout@v3
 
-    - name: Install Python and dbt
-      run: |
-        python3 -m venv env
-        source env/bin/activate
-        pip install --upgrade pip
-        pip install dbt-core dbt-postgres  # Adjust adapter if needed
-
     - name: Install jq
       run: sudo apt-get install -y jq
 
@@ -41,22 +34,12 @@ jobs:
 
     - name: Download DBT artifacts
       run: |
-        for artifact in manifest.json catalog.json; do
+        for artifact in manifest.json catalog.json index.html; do
           echo "Downloading $artifact..."
           curl -s -H "Authorization: Token $DBT_CLOUD_API_KEY" \
             -o "dbt_docs/$artifact" \
             "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/$RUN_ID/artifacts/$artifact"
         done
-
-    - name: Generate index.html from DBT docs
-      run: |
-        mkdir -p dbt_project
-        echo "name: temp_project" > dbt_project/dbt_project.yml
-        echo "version: '1.0'" >> dbt_project/dbt_project.yml
-        echo "profile: default" >> dbt_project/dbt_project.yml
-        echo "require-dbt-version: '>=1.0.0'" >> dbt_project/dbt_project.yml
-
-        dbt docs generate --no-compile --project-dir dbt_project --target-path dbt_docs
 
     - name: Commit and push to repo
       run: |
