@@ -43,14 +43,19 @@ jobs:
 
     - name: Commit and push to repo
       run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
+         git config user.name "github-actions[bot]"
+         git config user.email "github-actions[bot]@users.noreply.github.com"
 
-        git add dbt_docs/
+         git add dbt_docs/
 
-        if git diff --cached --quiet; then
-          echo "No changes to commit"
-        else
+         if git diff --cached --quiet; then
+           echo "No changes to commit"
+         else
+           git commit -m "Add DBT artifacts for run ID $RUN_ID [skip ci]"
+           git pull --rebase origin main
+         git push
+         fi
+
           git commit -m "Add DBT artifacts for run ID $RUN_ID [skip ci]"
           git push
-        fi
+         fi
