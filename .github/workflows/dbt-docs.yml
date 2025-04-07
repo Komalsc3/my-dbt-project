@@ -25,7 +25,9 @@ jobs:
         RUN_ID=$(curl -s -H "Authorization: Token $DBT_CLOUD_API_KEY" \
           "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/?job_definition_id=$JOB_ID&order_by=-id&limit=1" \
           | jq -r '.data[0].id')
+        echo "Latest Run ID: $RUN_ID"
         echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
+
 
     - name: Create docs folder
       run: mkdir -p dbt_docs
