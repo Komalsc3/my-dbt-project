@@ -29,15 +29,15 @@ jobs:
         echo "Latest RUN_ID is: $RUN_ID"
         echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
 
-    - name: Create docs folder
-      run: mkdir -p dbt_docs
+    - name: Create versioned docs folder
+      run: mkdir -p dbt_docs/$RUN_ID
 
     - name: Download DBT artifacts
       run: |
         for artifact in manifest.json catalog.json; do
           echo "Downloading $artifact..."
           curl -s -H "Authorization: Token $DBT_CLOUD_API_KEY" \
-            -o "dbt_docs/$artifact" \
+            -o "dbt_docs/$RUN_ID/$artifact" \
             "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/$RUN_ID/artifacts/$artifact"
         done
 
@@ -51,6 +51,6 @@ jobs:
         if git diff --cached --quiet; then
           echo "No changes to commit"
         else
-          git commit -m "Update DBT Cloud artifacts [skip ci]"
+          git commit -m "Add DBT artifacts for run ID $RUN_ID [skip ci]"
           git push
         fi
