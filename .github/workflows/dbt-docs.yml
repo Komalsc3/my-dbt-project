@@ -10,7 +10,7 @@ jobs:
     env:
       DBT_CLOUD_API_KEY: ${{ secrets.DBT_CLOUD_API_KEY }}
       ACCOUNT_ID: "70471823452202"
-      JOB_ID: "70471832292458"
+      JOB_ID: "70471823451355"
 
     steps:
     - name: Checkout repo
