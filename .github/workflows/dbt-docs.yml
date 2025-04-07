@@ -9,9 +9,8 @@ jobs:
 
     env:
       DBT_CLOUD_API_KEY: ${{ secrets.DBT_CLOUD_API_KEY }}
-      ACCOUNT_ID: "70471823452202"
-      JOB_ID: "70471823451355"
-      RUN_ID: "70471832298282"  # <-- Hardcoded
+      ACCOUNT_ID: ${{ secrets.DBT_CLOUD_ACCOUNT_ID }}
+      JOB_ID: ${{ secrets.DBT_CLOUD_JOB_ID }}
 
     steps:
     - name: Checkout repo
@@ -30,7 +29,7 @@ jobs:
         for artifact in manifest.json catalog.json index.html; do
           echo "Downloading $artifact..."
           RESPONSE=$(curl -s -H "Authorization: Token $DBT_CLOUD_API_KEY" \
-            "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/$RUN_ID/artifacts/$artifact")
+            "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/$JOB_ID/artifacts/$artifact")
 
           echo "$RESPONSE" > "docs/$artifact"
 
