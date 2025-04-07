@@ -81,5 +81,5 @@ jobs:
           echo "✅ No changes to commit"
         else
           git commit -m "Add DBT docs for ${{ env.FOLDER_NAME }} [skip ci]"
-          git push origin main
+          git push origin komal_april
         fi
