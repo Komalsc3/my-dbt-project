@@ -7,15 +7,14 @@ jobs:
   fetch-artifacts:
     runs-on: ubuntu-latest
 
+    env:
+      DBT_CLOUD_API_KEY: your-dbt-cloud-api-token     # <-- replace this
+      ACCOUNT_ID: "12345"                              # <-- replace this
+      JOB_ID: "67890"                                  # <-- replace this
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
-
-    - name: Set env variables (hardcoded)
-      run: |
-        echo "DBT_CLOUD_API_KEY=dbtu_PYJKeHw-R6_qc-3T3Acib1wBa2Bv4g0phSvBPOTvOHghF3eHP0n" >> $GITHUB_ENV
-        echo "ACCOUNT_ID=70471823452202" >> $GITHUB_ENV
-        echo "JOB_ID=70471823451355" >> $GITHUB_ENV
 
     - name: Get latest job run ID
       id: get-run
