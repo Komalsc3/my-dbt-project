@@ -1,1 +1,45 @@
-.github/workflows/ci.yml
+name: Fetch DBT Cloud Artifacts (Hardcoded)
+
+on:
+  workflow_dispatch:  # Manually triggered from GitHub UI
+
+jobs:
+  fetch-artifacts:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set env variables (hardcoded)
+      run: |
+        echo "DBT_CLOUD_API_KEY=dbtu_PYJKeHw-R6_qc-3T3Acib1wBa2Bv4g0phSvBPOTvOHghF3eHP0n" >> $GITHUB_ENV
+        echo "ACCOUNT_ID=70471823452202" >> $GITHUB_ENV
+        echo "JOB_ID=70471823451355" >> $GITHUB_ENV
+
+    - name: Get latest job run ID
+      id: get-run
+      run: |
+        RUN_ID=$(curl -s -H "Authorization: Token $DBT_CLOUD_API_KEY" \
+          "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/?job_definition_id=$JOB_ID&order_by=-id&limit=1" \
+          | jq -r '.data[0].id')
+        echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
+
+    - name: Create docs folder
+      run: mkdir -p dbt_docs
+
+    - name: Download artifacts (manifest.json, catalog.json)
+      run: |
+        for artifact in manifest.json catalog.json; do
+          curl -s -H "Authorization: Token $DBT_CLOUD_API_KEY" \
+            -o dbt_docs/$artifact \
+            "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/$RUN_ID/artifacts/$artifact"
+        done
+
+    - name: Commit and push artifacts
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add dbt_docs/
+        git commit -m "Update DBT Cloud artifacts [skip ci]" || echo "No changes to commit"
+        git push
