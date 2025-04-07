@@ -71,13 +71,19 @@ jobs:
 
         cp target/index.html dbt_docs/${{ env.FOLDER_NAME }}/index.html
 
-    - name: Commit and push all artifacts
-      run: |
-        git add dbt_docs/
+        - name: Commit and push all artifacts
+          run: |
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
 
-        if git diff --cached --quiet; then
-          echo "✅ No changes to commit"
-        else
-          git commit -m "Add DBT docs (manifest, catalog, index.html) for run $RUN_ID [skip ci]"
-          git push origin main
-        fi
+            git add dbt_docs/
+
+           # Always pull first to avoid "fetch first" errors
+           git pull origin main --rebase
+
+           if git diff --cached --quiet; then
+              echo "✅ No changes to commit"
+           else
+             git commit -m "Add DBT docs (manifest, catalog, index.html) for run $RUN_ID [skip ci]"
+            git push origin main
+          fi
