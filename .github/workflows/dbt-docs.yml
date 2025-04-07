@@ -34,9 +34,10 @@ jobs:
       run: |
         for artifact in manifest.json catalog.json; do
           curl -s -H "Authorization: Token $DBT_CLOUD_API_KEY" \
-            -o dbt_docs/$artifact \
+            -o "dbt_docs/$artifact" \
             "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/$RUN_ID/artifacts/$artifact"
         done
+
 
         - name: Commit and push to repo
           run: |
