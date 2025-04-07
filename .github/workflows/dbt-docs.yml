@@ -16,13 +16,11 @@ jobs:
     - name: Checkout repo
       uses: actions/checkout@v3
 
-    - name: Install system dependencies
+    - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y jq python3 python3-pip
-
-    - name: Install dbt-core
-      run: pip install dbt-core
+        pip install dbt-core
 
     - name: Get latest run ID
       id: get-run
@@ -39,23 +37,28 @@ jobs:
         echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
         echo "✅ Got RUN_ID: $RUN_ID"
 
-    - name: Set folder name
+    - name: Set folder name based on date and sequence
       run: |
         DATE=$(date +'%Y-%m-%d')
-        FOLDER_NAME="${DATE}_${RUN_ID}"
+        mkdir -p dbt_docs
+        SEQ=$(ls dbt_docs 2>/dev/null | grep "^$DATE" | wc -l)
+        SEQ_PADDED=$(printf "%02d" $((SEQ + 1)))
+        FOLDER_NAME="${DATE}_${SEQ_PADDED}"
         echo "FOLDER_NAME=$FOLDER_NAME" >> $GITHUB_ENV
+        echo "✅ Creating folder: dbt_docs/$FOLDER_NAME"
 
-    - name: Pull latest to avoid push conflict
+    - name: Pull latest changes to avoid push conflict
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git pull origin main --rebase
 
-    - name: Create folder and download artifacts
+    - name: Download DBT artifacts
       run: |
         mkdir -p dbt_docs/${{ env.FOLDER_NAME }}
 
         for artifact in manifest.json catalog.json; do
+          echo "Downloading $artifact..."
           curl -s -H "Authorization: Token $DBT_CLOUD_API_KEY" \
             -o "dbt_docs/${{ env.FOLDER_NAME }}/$artifact" \
             "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/${{ env.RUN_ID }}/artifacts/$artifact"
@@ -66,24 +69,17 @@ jobs:
         mkdir -p target/
         cp dbt_docs/${{ env.FOLDER_NAME }}/manifest.json target/
         cp dbt_docs/${{ env.FOLDER_NAME }}/catalog.json target/
-
         dbt docs generate
-
         cp target/index.html dbt_docs/${{ env.FOLDER_NAME }}/index.html
 
-        - name: Commit and push all artifacts
-          run: |
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
+    - name: Commit and push artifacts
+      run: |
+        git add dbt_docs/
+        git pull origin main --rebase
 
-            git add dbt_docs/
-
-           # Always pull first to avoid "fetch first" errors
-           git pull origin main --rebase
-
-           if git diff --cached --quiet; then
-              echo "✅ No changes to commit"
-           else
-             git commit -m "Add DBT docs (manifest, catalog, index.html) for run $RUN_ID [skip ci]"
-            git push origin main
-          fi
+        if git diff --cached --quiet; then
+          echo "✅ No changes to commit"
+        else
+          git commit -m "Add DBT docs for ${{ env.FOLDER_NAME }} [skip ci]"
+          git push origin main
+        fi
