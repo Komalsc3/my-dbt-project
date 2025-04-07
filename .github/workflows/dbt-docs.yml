@@ -16,43 +16,29 @@ jobs:
     - name: Checkout repo
       uses: actions/checkout@v3
 
-    - name: Install jq and coreutils
-      run: sudo apt-get install -y jq coreutils
+    - name: Install jq
+      run: sudo apt-get install -y jq
 
     - name: Get latest run ID
       id: get-run
       run: |
-        RESPONSE=$(curl -s -H "Authorization: Token $DBT_CLOUD_API_KEY" \
-          "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/?job_definition_id=$JOB_ID&order_by=-id&limit=1")
-
-        RUN_ID=$(echo "$RESPONSE" | jq -r '.data[0].id // empty')
-
-        if [ -z "$RUN_ID" ]; then
-          echo "❌ Could not find a valid RUN_ID. Exiting."
-          exit 1
-        fi
-
-        echo "✅ Found RUN_ID: $RUN_ID"
+        echo "Fetching latest run ID for job $JOB_ID..."
+        RUN_ID=$(curl -s -H "Authorization: Token $DBT_CLOUD_API_KEY" \
+          "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/?job_definition_id=$JOB_ID&order_by=-id&limit=1" \
+          | jq -r '.data[0].id')
+        echo "Latest RUN_ID is: $RUN_ID"
         echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
 
-    - name: Set folder name (date + run ID)
-      id: set-folder
-      run: |
-        DATE=$(date +'%Y-%m-%d')
-        FOLDER_NAME="${DATE}_${RUN_ID}"
-        echo "FOLDER_NAME=$FOLDER_NAME" >> $GITHUB_ENV
-        echo "✅ Using folder: $FOLDER_NAME"
-
     - name: Create docs folder
-      run: mkdir -p dbt_docs/${{ env.FOLDER_NAME }}
+      run: mkdir -p dbt_docs
 
     - name: Download DBT artifacts
       run: |
         for artifact in manifest.json catalog.json; do
           echo "Downloading $artifact..."
           curl -s -H "Authorization: Token $DBT_CLOUD_API_KEY" \
-            -o "dbt_docs/${{ env.FOLDER_NAME }}/$artifact" \
-            "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/${{ env.RUN_ID }}/artifacts/$artifact"
+            -o "dbt_docs/$artifact" \
+            "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/$RUN_ID/artifacts/$artifact"
         done
 
     - name: Commit and push to repo
@@ -60,14 +46,11 @@ jobs:
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
-        git pull --rebase origin main
-
         git add dbt_docs/
 
         if git diff --cached --quiet; then
-          echo "✅ No changes to commit"
-          exit 0
+          echo "No changes to commit"
         else
-          git commit -m "Add DBT artifacts for run $RUN_ID on $FOLDER_NAME [skip ci]"
+          git commit -m "Update DBT Cloud artifacts [skip ci]"
           git push
         fi
