@@ -1,7 +1,7 @@
-name: Fetch DBT Cloud Artifacts
+name: Fetch DBT Artifacts and Commit
 
 on:
-  workflow_dispatch:  # Allows manual trigger
+  workflow_dispatch:
 
 jobs:
   fetch-artifacts:
@@ -13,21 +13,21 @@ jobs:
       JOB_ID: "70471832292458"
 
     steps:
-    - name: Checkout repository
+    - name: Checkout repo
       uses: actions/checkout@v3
 
     - name: Install jq
       run: sudo apt-get install -y jq
 
-    - name: Get latest DBT Cloud run ID
+    - name: Get latest run ID
       id: get-run
       run: |
+        echo "Fetching latest run ID for job $JOB_ID..."
         RUN_ID=$(curl -s -H "Authorization: Token $DBT_CLOUD_API_KEY" \
           "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/?job_definition_id=$JOB_ID&order_by=-id&limit=1" \
           | jq -r '.data[0].id')
-        echo "Latest Run ID: $RUN_ID"
+        echo "Latest RUN_ID is: $RUN_ID"
         echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
-
 
     - name: Create docs folder
       run: mkdir -p dbt_docs
@@ -35,24 +35,22 @@ jobs:
     - name: Download DBT artifacts
       run: |
         for artifact in manifest.json catalog.json; do
+          echo "Downloading $artifact..."
           curl -s -H "Authorization: Token $DBT_CLOUD_API_KEY" \
             -o "dbt_docs/$artifact" \
-            "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/$JOB_ID/artifacts/$artifact"
+            "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/$RUN_ID/artifacts/$artifact"
         done
 
-
-        - name: Commit and push to repo
-          run: |
+    - name: Commit and push to repo
+      run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
         git add dbt_docs/
-        
-        # Check if there are any changes
+
         if git diff --cached --quiet; then
           echo "No changes to commit"
         else
           git commit -m "Update DBT Cloud artifacts [skip ci]"
           git push
         fi
-
