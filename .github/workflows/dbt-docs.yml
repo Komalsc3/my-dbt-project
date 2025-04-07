@@ -20,34 +20,29 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y jq python3 python3-pip
-        pip install dbt-core
+        pip install dbt-core pyyaml
 
     - name: Get latest run ID
       id: get-run
       run: |
+        echo "Fetching latest run ID for job $JOB_ID..."
         RUN_ID=$(curl -s -H "Authorization: Token $DBT_CLOUD_API_KEY" \
           "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/?job_definition_id=$JOB_ID&order_by=-id&limit=1" \
           | jq -r '.data[0].id')
-
-        if [ -z "$RUN_ID" ] || [ "$RUN_ID" == "null" ]; then
-          echo "❌ Could not get valid RUN_ID"
-          exit 1
-        fi
-
         echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
         echo "✅ Got RUN_ID: $RUN_ID"
 
     - name: Set folder name based on date and sequence
       run: |
         DATE=$(date +'%Y-%m-%d')
-        mkdir -p dbt_docs
-        SEQ=$(ls dbt_docs 2>/dev/null | grep "^$DATE" | wc -l)
+        mkdir -p dbt_docs_generate
+        SEQ=$(ls dbt_docs_generate 2>/dev/null | grep "^$DATE" | wc -l)
         SEQ_PADDED=$(printf "%02d" $((SEQ + 1)))
         FOLDER_NAME="${DATE}_${SEQ_PADDED}"
         echo "FOLDER_NAME=$FOLDER_NAME" >> $GITHUB_ENV
-        echo "✅ Creating folder: dbt_docs/$FOLDER_NAME"
+        echo "✅ Folder: dbt_docs_generate/$FOLDER_NAME"
 
-    - name: Pull latest changes to avoid push conflict
+    - name: Pull latest main to avoid push issues
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -55,31 +50,38 @@ jobs:
 
     - name: Download DBT artifacts
       run: |
-        mkdir -p dbt_docs/${{ env.FOLDER_NAME }}
-
+        mkdir -p dbt_docs_generate/${{ env.FOLDER_NAME }}
         for artifact in manifest.json catalog.json; do
           echo "Downloading $artifact..."
           curl -s -H "Authorization: Token $DBT_CLOUD_API_KEY" \
-            -o "dbt_docs/${{ env.FOLDER_NAME }}/$artifact" \
+            -o "dbt_docs_generate/${{ env.FOLDER_NAME }}/$artifact" \
             "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/${{ env.RUN_ID }}/artifacts/$artifact"
         done
 
-    - name: Generate index.html using dbt docs generate
+    - name: Generate index.html
       run: |
         mkdir -p target/
-        cp dbt_docs/${{ env.FOLDER_NAME }}/manifest.json target/
-        cp dbt_docs/${{ env.FOLDER_NAME }}/catalog.json target/
+        cp dbt_docs_generate/${{ env.FOLDER_NAME }}/manifest.json target/
+        cp dbt_docs_generate/${{ env.FOLDER_NAME }}/catalog.json target/
         dbt docs generate
-        cp target/index.html dbt_docs/${{ env.FOLDER_NAME }}/index.html
+        cp target/index.html dbt_docs_generate/${{ env.FOLDER_NAME }}/index.html
 
-    - name: Commit and push artifacts
+    - name: Generate index.yml
       run: |
-        git add dbt_docs/
-        git pull origin komal_april --rebase
+        echo "folders:" > dbt_docs_generate/index.yml
+        for dir in $(ls dbt_docs_generate | grep -E "^[0-9]{4}-[0-9]{2}-[0-9]{2}_"); do
+          echo "  - name: $dir" >> dbt_docs_generate/index.yml
+        done
+        echo "✅ index.yml generated."
+
+    - name: Commit and push all artifacts
+      run: |
+        git add dbt_docs_generate/
+        git pull origin main --rebase
 
         if git diff --cached --quiet; then
           echo "✅ No changes to commit"
         else
           git commit -m "Add DBT docs for ${{ env.FOLDER_NAME }} [skip ci]"
-          git push origin komal_april
+          git push origin main
         fi
