@@ -1,0 +1,42 @@
+version: 2
+
+sources:
+  - name: raw_application
+    database: raw  
+    schema: application  
+    tables:
+      - name: parties
+      - name: loans
+      - name: actors
+
+  - name: raw_reverse_svcr_celink
+    database: raw  
+    schema: reverse_svcr_celink  
+    tables:
+      - name: vw_celink_bkfs_bankruptcy_case_info
+      - name: vw_celink_bkfs_ref_info
+      - name: vw_celink_bkfs_loan_info
+      - name: vw_celink_loandata
+      - name: vw_celink_bankruptcy
+
+  - name: stage_reports
+    database: stage  
+    schema: reports  
+    tables:
+      - name: vw_svc_cms_bkdetail
+      - name: svc_sls_bkdaily_snapshot
+      - name: vw_svc_lh_inventory
+      - name: vw_svc_cms_liquidations
+      - name: vw_svc_cms_loandetail
+    
+  - name: stage_reference
+    database: stage  
+    schema: reference  
+    tables:
+      - name: firmname
+
+  - name: stage_core
+    database: stage  
+    schema: core  
+    tables:
+      - name: etltargetbankruptcies
