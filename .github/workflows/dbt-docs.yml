@@ -8,9 +8,9 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      DBT_CLOUD_API_KEY: ${{ secrets.DBT_CLOUD_API_KEY }}
       ACCOUNT_ID: "70471823452202"
       JOB_ID: "70471832292458"
-      DBT_CLOUD_API_KEY: ${{ secrets.DBT_CLOUD_API_KEY }}
 
     steps:
     - name: Checkout repo
@@ -19,66 +19,27 @@ jobs:
     - name: Install jq
       run: sudo apt-get install -y jq
 
-    - name: Trigger DBT Cloud job
-      id: trigger
+    - name: Get latest run ID
+      id: get-run
       run: |
-        echo "Triggering DBT Cloud job..."
-        RESPONSE=$(curl -s -X POST \
-          -H "Authorization: Token $DBT_CLOUD_API_KEY" \
-          -H "Content-Type: application/json" \
-          -d '{}' \
-          "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/jobs/$JOB_ID/run/")
-          
-        echo "Trigger response: $RESPONSE"
-        RUN_ID=$(echo "$RESPONSE" | jq -r '.data.id')
-
-        if [ "$RUN_ID" == "null" ] || [ -z "$RUN_ID" ]; then
-          echo "❌ Failed to retrieve RUN_ID. Exiting."
-          exit 1
-        fi
-
-        echo "✅ RUN_ID=$RUN_ID"
+        echo "Fetching latest run ID for job $JOB_ID..."
+        RUN_ID=$(curl -s -H "Authorization: Token $DBT_CLOUD_API_KEY" \
+          "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/?job_definition_id=$JOB_ID&order_by=-id&limit=1" \
+          | jq -r '.data[0].id')
+        echo "Latest RUN_ID is: $RUN_ID"
         echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
 
-    - name: Wait for DBT Cloud job to complete
-      run: |
-        echo "Waiting for DBT Cloud job run $RUN_ID to complete..."
-        while true; do
-          RESPONSE=$(curl -s -H "Authorization: Token $DBT_CLOUD_API_KEY" \
-            "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/$RUN_ID/")
-          STATUS=$(echo "$RESPONSE" | jq -r '.data.status')
-          echo "Current status: $STATUS"
-          if [ "$STATUS" == "10" ]; then
-            echo "✅ Run $RUN_ID completed successfully."
-            break
-          elif [ "$STATUS" == "20" ]; then
-            echo "❌ Run $RUN_ID failed."
-            exit 1
-          fi
-          sleep 10
-        done
-
-    - name: Create dated docs folder
-      run: |
-        TIMESTAMP=$(date +'%Y-%m-%d_%H-%M-%S')
-        FOLDER_NAME="dbt_docs_generate/${TIMESTAMP}_${RUN_ID}"
-        mkdir -p "$FOLDER_NAME"
-        echo "FOLDER_NAME=$FOLDER_NAME" >> $GITHUB_ENV
+    - name: Create docs folder
+      run: mkdir -p dbt_docs
 
     - name: Download DBT artifacts
       run: |
-        for artifact in manifest.json catalog.json index.html; do
+        for artifact in manifest.json catalog.json; do
           echo "Downloading $artifact..."
           curl -s -H "Authorization: Token $DBT_CLOUD_API_KEY" \
-            -o "$FOLDER_NAME/$artifact" \
+            -o "dbt_docs/$artifact" \
             "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/$RUN_ID/artifacts/$artifact"
         done
-
-    - name: Update index.yml
-      run: |
-        echo "- run_id: $RUN_ID" >> dbt_docs_generate/index.yml
-        echo "  folder: $FOLDER_NAME" >> dbt_docs_generate/index.yml
-        echo "  timestamp: $(date)" >> dbt_docs_generate/index.yml
 
     - name: Commit and push to repo
       run: |
@@ -86,11 +47,11 @@ jobs:
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
         git pull --rebase origin main
-        git add dbt_docs_generate/
+        git add dbt_docs/
 
         if git diff --cached --quiet; then
           echo "No changes to commit"
         else
-          git commit -m "Add DBT artifacts for run ID $RUN_ID [skip ci]"
+          git commit -m "Update DBT Cloud artifacts [skip ci]"
           git push
         fi
