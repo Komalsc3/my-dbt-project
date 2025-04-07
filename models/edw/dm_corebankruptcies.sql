@@ -1,1 +1,1 @@
-dm_corebankruptcies.sql
+dm_corebankruptcies
