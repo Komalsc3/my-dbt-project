@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DBT_CLOUD_API_KEY: ${{ secrets.DBT_CLOUD_API_KEY }}
+      DBT_CLOUD_API_KEY: "dbtc_vDn7FwIVpaZQF1SYlxnmaBLAZYxXBR87PGcYP5eRdn3HyIn3Hg"
       ACCOUNT_ID: "70471823452202"
       JOB_ID: "70471823451355"
       RUN_ID: "70471832298282"  # <-- Hardcoded
