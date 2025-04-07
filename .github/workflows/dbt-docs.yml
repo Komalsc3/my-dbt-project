@@ -11,6 +11,7 @@ jobs:
       DBT_CLOUD_API_KEY: ${{ secrets.DBT_CLOUD_API_KEY }}
       ACCOUNT_ID: "70471823452202"
       JOB_ID: "70471832292458"
+      RUN_ID: "70471832298282"  # <-- Hardcoded RUN_ID
 
     steps:
     - name: Checkout repo
@@ -19,15 +20,7 @@ jobs:
     - name: Install jq
       run: sudo apt-get install -y jq
 
-    - name: Get latest run ID
-      id: get-run
-      run: |
-        echo "Fetching latest run ID for job $JOB_ID..."
-        RUN_ID=$(curl -s -H "Authorization: Token $DBT_CLOUD_API_KEY" \
-          "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/?job_definition_id=$JOB_ID&order_by=-id&limit=1" \
-          | jq -r '.data[0].id')
-        echo "Latest RUN_ID is: $RUN_ID"
-        echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
+    # Removed the "Get latest run ID" step
 
     - name: Create docs folder
       run: mkdir -p docs
@@ -53,5 +46,5 @@ jobs:
          echo "No changes to commit"
         else
          git commit -m "Update DBT Cloud artifacts [skip ci]"
-        git push
+         git push
         fi
