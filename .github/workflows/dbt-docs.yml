@@ -1,10 +1,10 @@
-name: Fetch DBT Artifacts and Commit
+name: Run DBT Cloud Job and Commit Docs
 
 on:
   workflow_dispatch:
 
 jobs:
-  fetch-artifacts:
+  run-dbt-and-fetch-docs:
     runs-on: ubuntu-latest
 
     env:
@@ -22,21 +22,36 @@ jobs:
         sudo apt-get install -y jq python3 python3-pip
         pip install dbt-core pyyaml
 
-    - name: Get latest run ID
-      id: get-run
+    - name: Trigger DBT Cloud Job Run
+      id: trigger
       run: |
-        echo "Fetching latest run ID for job $JOB_ID..."
-        RUN_ID=$(curl -s -H "Authorization: Token $DBT_CLOUD_API_KEY" \
-          "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/?job_definition_id=$JOB_ID&order_by=-id&limit=1" \
-          | jq -r '.data[0].id')
-
-        if [ "$RUN_ID" == "null" ] || [ -z "$RUN_ID" ]; then
-          echo "❌ Could not fetch a valid RUN_ID"
-          exit 1
-        fi
-
+        RESPONSE=$(curl -s -X POST \
+          -H "Authorization: Token $DBT_CLOUD_API_KEY" \
+          -H "Content-Type: application/json" \
+          -d '{}' \
+          "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/jobs/$JOB_ID/run/")
+        RUN_ID=$(echo "$RESPONSE" | jq -r '.data.id')
         echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
-        echo "✅ Got RUN_ID: $RUN_ID"
+        echo "✅ Triggered DBT Cloud job with RUN_ID=$RUN_ID"
+
+    - name: Wait for DBT Run to Complete
+      run: |
+        echo "Waiting for DBT Cloud job run $RUN_ID to complete..."
+        STATUS=""
+        while true; do
+          RESPONSE=$(curl -s -H "Authorization: Token $DBT_CLOUD_API_KEY" \
+            "https://cloud.getdbt.com/api/v2/accounts/$ACCOUNT_ID/runs/$RUN_ID/")
+          STATUS=$(echo "$RESPONSE" | jq -r '.data.status')
+          echo "Current status: $STATUS"
+          if [ "$STATUS" == "10" ]; then
+            echo "✅ Run $RUN_ID completed successfully."
+            break
+          elif [ "$STATUS" == "20" ]; then
+            echo "❌ Run $RUN_ID failed."
+            exit 1
+          fi
+          sleep 10
+        done
 
     - name: Set folder name using JOB_ID, date, and sequence
       run: |
