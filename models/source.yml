@@ -8,6 +8,7 @@ sources:
       - name: parties
       - name: loans
       - name: actors
+      - name: bankruptcies
 
   - name: raw_reverse_svcr_celink
     database: raw  
@@ -28,6 +29,7 @@ sources:
       - name: vw_svc_lh_inventory
       - name: vw_svc_cms_liquidations
       - name: vw_svc_cms_loandetail
+      - name: me_dates
     
   - name: stage_reference
     database: stage  
@@ -40,3 +42,9 @@ sources:
     schema: core  
     tables:
       - name: etltargetbankruptcies
+
+  - name: edw_pbi
+    database: edw  
+    schema: pbi  
+    tables:
+      - name: loan_master_history

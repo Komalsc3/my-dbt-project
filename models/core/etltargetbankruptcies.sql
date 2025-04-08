@@ -43,7 +43,7 @@ with
             end as bkfilingdistrict
         from {{ ref("celink_bankruptcy_stage") }} b
         left outer join
-            raw.reverse_svcr_celink.vw_celink_loandata ld on ld.loanid = b.loanid
+            {{ source("raw_reverse_svcr_celink", "vw_celink_loandata") }} ld on ld.loanid = b.loanid
     ),
     transient_table as (
         select
