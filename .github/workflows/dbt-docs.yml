@@ -8,9 +8,16 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+<<<<<<< HEAD
+      DBT_CLOUD_API_KEY: "dbtc_KcG9T1MgvGk7gWUZlgoh8Qxn5dPARyWyjuMebbVUsF93TtH1LQ"
+      ACCOUNT_ID: "70471823452202"
+      JOB_ID: "70471832292458"
+      RUN_ID: "70471832298282"  # <-- Hardcoded
+=======
       DBT_CLOUD_API_KEY: ${{ secrets.DBT_CLOUD_API_KEY }}
       ACCOUNT_ID: ${{ secrets.DBT_CLOUD_ACCOUNT_ID }}
       JOB_ID: ${{ secrets.DBT_CLOUD_JOB_ID }}
+>>>>>>> 6abafaa966ba8f24f18813fe7cfcbe6de3063f95
 
     steps:
     - name: Checkout repo
