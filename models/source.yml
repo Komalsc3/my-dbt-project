@@ -59,3 +59,9 @@ sources:
       - name: vw_phh_loan_master
       - name: phh_monthly_loan_summary
       - name: phh_bksummary
+
+  - name: stage_information_schema  
+    database: stage  
+    schema: information_schema  
+    tables:
+      - name: columns
