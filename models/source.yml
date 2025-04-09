@@ -48,3 +48,14 @@ sources:
     schema: pbi  
     tables:
       - name: loan_master_history
+
+  - name: raw_reverse_svcr_phh
+    database: raw  
+    schema: reverse_svcr_phh 
+    tables:
+      - name: vw_phh_bkfs_loaninfo_loaninfomsp
+      - name: vw_phh_bkfs_refinfo
+      - name: vw_phh_bkfs_bankruptcycaseinfo
+      - name: vw_phh_loan_master
+      - name: phh_monthly_loan_summary
+      - name: phh_bksummary
