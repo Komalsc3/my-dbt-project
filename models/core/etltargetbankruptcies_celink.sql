@@ -3,9 +3,7 @@
         materialized="incremental",        
         database="stage",
         schema="core",
-        alias="etltargetbankruptcies",
-        pre_hook = ["delete from stage.core.etltargetbankruptcies trg where upper(servicer)='CELINK' and upper(masterservicer)='{{var('masterservicer')}}';
-"] ) 
+        alias="etltargetbankruptcies_new") 
 }}
 
 with
