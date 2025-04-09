@@ -3,7 +3,7 @@
         materialized="incremental",        
         database="stage",
         schema="core",
-        alias="etltargetbankruptcies_celink",
+        alias="etltargetbankruptcies_phh",
         pre_hook = ["delete from {{ this }} trg where upper(servicer)='{{var('servicer')}}' and upper(masterservicer)='{{var('masterservicer')}}';
 "]) 
 }}
@@ -11,7 +11,7 @@
 with
     transient_table as (
         select
-            stage.core.etltargetbankruptcies_id.nextval as id,
+            null as id,
             b.loanid,
             b.servicer,
             b.masterservicer,
@@ -57,46 +57,16 @@ with
             b.bkdismisseddate,
             b.bkremoveddate,
             b.adversaryproceedingflag,
-            case
-                when b.bkdischargedate is not null
-                then 'complete '
-                when b.bkdismisseddate is not null
-                then 'closed '
-                when b.mfrentereddate is not null
-                then 'complete '
-                when b.bkremoveddate is not null
-                then 'closed '
-                when ld.status_description <> 'bankruptcy ' and b.servicer = 'celink '
-                then 'closed '
-                else 'active '
-            end as status,
-            case
-                when upper(b.bkfilingdistrict) like ('%s outhern % ')
-                then 'southern '
-                when upper(b.bkfilingdistrict) like ('% middle % ')
-                then 'middle '
-                when upper(b.bkfilingdistrict) like ('% northern % ')
-                then 'northern '
-                when upper(b.bkfilingdistrict) like ('% eastern % ')
-                then 'eastern '
-                when upper(b.bkfilingdistrict) like ('% middle % ')
-                then 'middle '
-                when upper(b.bkfilingdistrict) like ('% central ')
-                then 'central '
-                when upper(b.bkfilingdistrict) like ('% all % ')
-                then null
-            end as bkfilingdistrict,
+            b.status,
+            b.bkfilingdistrict,
             {{
                 hash_key_generate(
-                    var("servicer")~"_bankruptcy_stage_"~ var("masterservicer"), "b"
+                    var("servicer")~"_bankruptcy_stage", "b"
                 )
             }},
             current_date() as etllastupdatedat,
             current_date() as etlchangedetectdate
-        from {{ ref("celink_bankruptcy_stage") }} b
-        left outer join
-            {{ source("raw_reverse_svcr_celink", "vw_celink_loandata") }} ld
-            on ld.loanid = b.loanid
+        from {{ ref("phh_bankruptcy_stage") }} b
     )
 select
     id,
