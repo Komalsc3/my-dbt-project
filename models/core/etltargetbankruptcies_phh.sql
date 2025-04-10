@@ -3,7 +3,7 @@
         materialized="table",        
         database="stage",
         schema="core",
-        alias="etltargetbankruptcies_phh") 
+        alias="etltargetbankruptcies_phh_"~ var("masterservicer")) 
 }}
 
 with

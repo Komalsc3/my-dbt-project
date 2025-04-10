@@ -29,8 +29,8 @@ with
     phh_data_cte as (
         select
             p.loanid as loanid,
-            'PHH' as servicer,  -- dbo.ContactPull(l.ServicerId) AS SERVICER
-            'PHH' as masterservicer,
+            '{{var('servicer')}}' as servicer,  -- dbo.ContactPull(l.ServicerId) AS SERVICER
+            '{{var('masterservicer')}}' as masterservicer,
             pl.servicerloannumber as servicerloannumber,
             replace(
                 concat(
