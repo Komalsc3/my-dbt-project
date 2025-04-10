@@ -1,6 +1,6 @@
 {%- macro hash_key_generate(table_name, alias="alias") -%}
     {% set all_columns %}
-    with cte as(select * from {{ source("stage_information_schema", "columns") }} 
+    with cte as(select column_name from {{ source("stage_information_schema", "columns") }} 
         where table_name = upper('{{ table_name }}') ORDER BY ordinal_position)
 select listagg(column_name,',')  from cte
     {% endset -%}
