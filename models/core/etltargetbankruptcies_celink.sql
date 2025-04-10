@@ -1,11 +1,9 @@
 {{
     config(
-        materialized="incremental",        
+        materialized="table",        
         database="stage",
         schema="core",
-        alias="etltargetbankruptcies_celink",
-        pre_hook = ["delete from {{ this }} trg where upper(servicer)='{{var('servicer')}}' and upper(masterservicer)='{{var('masterservicer')}}';
-"]) 
+        alias="etltargetbankruptcies_celink_" ~ var("masterservicer")) 
 }}
 
 with

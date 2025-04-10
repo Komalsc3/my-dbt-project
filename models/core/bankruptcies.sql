@@ -9,7 +9,7 @@
 where
     UPPER(array_to_string (array_compact (array_construct(loanid,CaseNumber,BKFilingState,BKFilingDistrict)),'|')) NOT IN 
       (SELECT UPPER(array_to_string (array_compact (array_construct(loanid,CaseNumber,BKFilingState,BKFilingDistrict)),'|'))
-      from {{ ref('etltargetbankruptcies_celink') }} etltargetbankruptcies 
+      from {{ ref('etltargetbankruptcies') }} etltargetbankruptcies 
       where upper(servicer)='CELINK' and upper(masterservicer)='{{var('masterservicer')}}'
     );
 "] ) 
@@ -69,7 +69,7 @@ with
             src.etlchangedetectdate,
             src.keyattributehash,
             null as metadataaction
-        from  {{ ref("etltargetbankruptcies_celink") }} src
+        from  {{ ref("etltargetbankruptcies") }} src
     )
 select
     final_cte.id,
