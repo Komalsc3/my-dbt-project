@@ -9,6 +9,7 @@ config-version: 2
 
 vars:
   masterservicer:
+  servicer:
 
 # This setting configures which "profile" dbt uses for this project.
 profile: 'default'

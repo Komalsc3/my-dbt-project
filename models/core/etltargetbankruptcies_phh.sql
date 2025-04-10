@@ -4,7 +4,7 @@
         database="stage",
         schema="core",
         alias="etltargetbankruptcies_phh",
-        pre_hook = ["delete from {{ this }} trg where upper(servicer)='{{var('servicer')}}' and upper(masterservicer)='{{var('masterservicer')}}';
+        pre_hook = ["delete from {{ this }} trg where upper(masterservicer)='{{var('masterservicer')}}';
 "]) 
 }}
 
